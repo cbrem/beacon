@@ -40,7 +40,7 @@ FORMAT = ihex
 TARGET = main
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = $(TARGET).c leds/leds.c usart/usart.c i2chw/twimastertimeout.c mpu6050/mpu6050.c mpu6050/mpu6050dmp6.c
+SRC = $(TARGET).c leds/leds.c usart/usart.c i2chw/twimastertimeout.c mpu6050/mpu6050.c mpu6050/mpu6050dmp6.c math3d/math3d.c
 
 # List Assembler source files here.
 # Make them always end in a capital .S.  Files ending in a lowercase .s

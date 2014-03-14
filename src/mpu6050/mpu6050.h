@@ -20,6 +20,10 @@ References:
 #include <avr/io.h>
 #include "mpu6050registers.h"
 
+// TODO: remove
+#include <stdlib.h>
+#include "../usart/usart.h"
+
 //i2c settings
 #define MPU6050_I2CFLEURYPATH "../i2chw/i2cmaster.h" //define the path to i2c fleury lib
 #define MPU6050_I2CINIT 1 //init i2c

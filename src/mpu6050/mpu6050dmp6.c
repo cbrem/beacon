@@ -434,16 +434,13 @@ void mpu6050_getQuaternion(const uint8_t* packet, double *qw, double *qx, double
 }
 
 /*
- * get euler angles
- * aerospace sequence, to obtain sensor attitude:
- * 1. rotate around sensor Z plane by yaw
- * 2. rotate around sensor Y plane by pitch
- * 3. rotate around sensor X plane by roll
+ * Get components of gravity vector.
  */
-void mpu6050_getRollPitchYaw(double qw, double qx, double qy, double qz, double *roll, double *pitch, double *yaw) {
-	*yaw = atan2(2*qx*qy - 2*qw*qz, 2*qw*qw + 2*qx*qx - 1);
-	*pitch = -asin(2*qx*qz + 2*qw*qy);
-	*roll = atan2(2*qy*qz - 2*qw*qx, 2*qw*qw + 2*qz*qz - 1);
+void mpu6050_getGravity(double qw, double qx, double qy, double qz, double *gx, double *gy, double *gz) {
+    *gx = 2 * (qx*qz - qw*qy);
+    *gy = 2 * (qw*qx + qy*qz);
+    *gz = qw*qw - qx*qx - qy*qy + qz*qz;
+    normalize(gx, gy, gz);
 }
 
 /*
@@ -470,11 +467,21 @@ uint8_t mpu6050_getQuaternionWait(double *qw, double *qx, double *qy, double *qz
     	//wait for correct available data length, should be a VERY short wait
     	while (mpu6050_fifoCount < MPU6050_DMP_dmpPacketSize)
     		mpu6050_fifoCount = mpu6050_getFIFOCount();
+
     	//read a packet from FIFO
     	mpu6050_getFIFOBytes(mpu6050_fifoBuffer, MPU6050_DMP_dmpPacketSize);
     	mpu6050_fifoCount -= MPU6050_DMP_dmpPacketSize;
+
     	//get quaternion
     	mpu6050_getQuaternion(mpu6050_fifoBuffer, qw, qx, qy, qz);
+
+        // CB: Reset fifo to ensure that we get fresh packets whenever we read.
+        // Previously, we were reading at most one packet from the FIFO whenever
+        // this function was called. This caused packets to accumulate if they
+        // arrived more frequently than this function was called. This could lead
+        // to accumulation of old data.
+        mpu6050_resetFIFO();
+
     	return 1;
     }
 
