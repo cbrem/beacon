@@ -446,8 +446,6 @@ void mpu6050_getGravity(double qw, double qx, double qy, double qz, double *gx, 
 /*
  * Waits until quaternion is available, then gets it.
  * Returns 1 if new quaternion was fetched, 0 o/w.
- *
- * TODO: If timeout is set, also exit if a timeout_interrupt fires.
  */
 uint8_t mpu6050_getQuaternionWait(double *qw, double *qx, double *qy, double *qz) {
     // Wait for data to become available.

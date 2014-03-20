@@ -1,3 +1,24 @@
+// TODO: get power-off worked out
+//
+// Desired behavior:
+//   * Press button to turn on (wake from sleep mode)
+//   * Press button to turn off (initiate sleep mode)
+//   * Enter sleep mode after inactivity
+//
+// Concerns:
+//   * hardware debounce button to prevent multiple on/offs
+//   * software debounce button: if an interrupt occurs when
+//     we're in the middle of a start-up shut-down, it should
+//     have no effect
+//   * detect inactivity by having a counter and resetting
+//     it whenever the accelerometer moves? we might need to
+//     turn down sensitivity for this to actually work.
+//   * indicate "powered up and running" to user with LED
+//   * check whether power consumption in sleep mode is actually
+//     comparable to battery leakage
+//   * if AVR sleeps, should MPU sleep too? Or could we just
+//     electronically disconnect it?
+
 #include <stdlib.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -13,20 +34,32 @@
 // Number of milliseconds between cycles.
 #define CYCLE_LENGTH 100
 
-// If the dot product a normalized gravity vector with one of the glove's
-// axes is above this threshold, we will consider them parallel.
+// Number of milliseconds in a flash on/off cycle for the LEDs.
+#define FLASH_LENGTH 1000
+
+// Portion of flash cycles for which LEDs can be on.
+#define FLASH_DUTY 0.5
+
+// If the dot product a normalized gravity vector with one another vector
+// is above this threshold, we will consider them parallel.
 #define SIGNAL_THRESHOLD 0.75
+
+// Unit vectors which we will test for being parallel to the gravity vector.
+const double rightVect [] = {-0.5 * M_SQRT2, -0.5 * M_SQRT2, 0.0};
+const double leftVect [] = {-0.5 * M_SQRT2, 0.5 * M_SQRT2, 0.0};
 
 // Globals
 // TODO: bad to have globals?
 double quatW, quatX, quatY, quatZ;
 double gravX, gravY, gravZ;
+uint16_t flashCycleMillis;
 
 // Configures microcontroller and peripherals. Runs once, at startup.
 // Returns 0 if successful, non-zero error otherwise.
 uint8_t main_init() {
 
-	// Init I/O LEDS.
+	// Init I/O LEDS, and reset the flash cycle counter.
+	flashCycleMillis = 0;
 	leds_init();
 
 	// Init mpu6050 accel/gyro and integrated DMP chip.
@@ -35,12 +68,6 @@ uint8_t main_init() {
 	if (mpu6050_dmpInitialize()) {
 		return 1;
 	}
-
-	// TODO: taken from jrowberg's c++ code...do we need this?
-	mpu6050_setXGyroOffset(220);
-    mpu6050_setYGyroOffset(76);
-    mpu6050_setZGyroOffset(-85);
-
 	mpu6050_dmpEnable();
 	_delay_ms(10);
 
@@ -84,15 +111,27 @@ void log_orientation() {
 	usart_putc('\n');
 }
 
+
+
 // Update the indicator LEDS.
 void update_leds() {
-	if (math3d_dot(gravX, gravY, gravZ, 1.0, 0.0, 0.0) >= SIGNAL_THRESHOLD) {
-		// The glove's positive x-axis is pointing roughly upward,
-		// so the biker is signalling right.
+	// Update our (rough) count of the number of milliseconds since the
+	// beginning of the last flash cycle.
+	flashCycleMillis = (flashCycleMillis + CYCLE_LENGTH) % FLASH_LENGTH;
+
+	// If we are not in the ON portion of the flash duty cycle, make sure that
+	// the LEDS are off.
+	if (flashCycleMillis > FLASH_LENGTH * FLASH_DUTY) {
+		leds_set(LEDS_OFF);
+		return;
+	}
+
+	// Otherwise, set LEDs if we are in a turning position.
+	if (math3d_dot(gravX, gravY, gravZ, rightVect[0], rightVect[1], rightVect[2]) >= SIGNAL_THRESHOLD) {
+		// The the biker is signalling right.
 		leds_set(LEDS_RIGHT);
-	} else if (math3d_dot(gravX, gravY, gravZ, 0.0, -1.0, 0.0) >= SIGNAL_THRESHOLD) {
-		// The glove's negative y-axis is pointing roughly upward,
-		// so the biker is signalling left.
+	} else if (math3d_dot(gravX, gravY, gravZ, leftVect[0], leftVect[1], leftVect[2]) >= SIGNAL_THRESHOLD) {
+		// The biker is signalling left.
 		leds_set(LEDS_LEFT);
 	} else {
 		// The biker is not signalling.
@@ -102,19 +141,18 @@ void update_leds() {
 
 // Main routine.
 int main(void) {
-
 	// Attempt setup, and idle if it fails.
 	if (main_init()) {
 		for (;;) {}
-	}	
+	}
 
 	// Main loop.
-	usart_puts("Beginning main loop.\n");
+	//usart_puts("Beginning main loop.\n");
 	for (;;) {
 		_delay_ms(CYCLE_LENGTH);
 
 		get_orientation();
-		log_orientation();
+		//log_orientation();
 		update_leds();
 	}
 
