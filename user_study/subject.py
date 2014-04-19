@@ -1,8 +1,4 @@
-# TODO:
-#  - remove HTTP reqs
-#  - get NTP offset at startup, and use this in timestamps
-
-import Tkinter, urllib, urllib2, time, os, ntplib
+import Tkinter, time, os, ntplib
 import constants
 
 class Subject(object):
@@ -29,19 +25,19 @@ class Subject(object):
     def start(self):
         self.log.write("EXPERIMENTER\n")
         self.log.write("OFFSET %0.10f \n\n" % self.offset)
-        self.log.write("%d - START\n" % time.time())
+        self.log.write("%.10f - START\n" % time.time())
         self.root.mainloop()
 
     # Ends the experiment.
     def end(self):
-        self.log.write("%d - END\n" % time.time())
+        self.log.write("%.10f - END\n" % time.time())
         self.log.close()
         self.root.destroy()
 
     # Reacts to a key press.
     def keyPressed(self, event):
         if event.keysym in constants.signals:
-            self.log.write("%d - SIGNAL: %s\n" % (time.time(), event.keysym))
+            self.log.write("%.10f - SIGNAL: %s\n" % (time.time(), event.keysym))
         elif event.keysym == 'x':
             self.end()
 

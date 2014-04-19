@@ -39,7 +39,7 @@ class Experimenter(object):
     def keyPressed(self, event):
         if self.signal:
             # Log the signal.
-            self.log.write("%d - SIGNAL: %s\n" % (time.time(), self.signal))
+            self.log.write("%.10f - SIGNAL: %s\n" % (time.time(), self.signal))
 
             # Clear the text.
             self.text.set("Waiting for next signal...")
@@ -53,13 +53,13 @@ class Experimenter(object):
     def start(self):
         self.log.write("EXPERIMENTER\n")
         self.log.write("OFFSET %0.10f \n\n" % self.offset)
-        self.log.write("%d - START\n" % time.time())
+        self.log.write("%.10f - START\n" % time.time())
         self.promptSignal()
         self.root.mainloop()
 
     # Ends an experiment.
     def end(self):
-        self.log.write("%d - END\n" % time.time())
+        self.log.write("%.10f - END\n" % time.time())
         self.log.close()
         self.root.destroy()
 
