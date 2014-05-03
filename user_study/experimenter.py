@@ -25,7 +25,7 @@ class Experimenter(object):
     # Prompts experimenter to do one signal.
     def promptSignal(self):
         if self.numSignals < constants.numSignals:
-            self.signal = "Left" if self.signal == "Right" else "Right"
+            self.signal = random.choice(["Right", "Left"])
             self.text.set("Signal #%d. Do\n\n%s\n\nwhile pressing any key." % (self.numSignals, self.signal))
             self.numSignals += 1
         else:
@@ -36,8 +36,6 @@ class Experimenter(object):
         if not self.started:
             self.start()
         else:
-            print self.signal
-
             # Clear the text.
             self.text.set("Hold signal...")
 
@@ -64,7 +62,6 @@ class Experimenter(object):
         self.log = open(logName, "w")
 
         # Other state.
-        self.signal = random.choice(["Right", "Left"])
         self.numSignals = 0
 
         # Write log header.
