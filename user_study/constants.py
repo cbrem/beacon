@@ -5,6 +5,7 @@ sleepMax = 10000
 
 numSignals = 10
 signals = ["Right", "Left"]
+signalLength = 2000
 
 logDir = "logs"
 
